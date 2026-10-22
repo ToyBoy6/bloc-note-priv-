@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bloc-notes sombre</title>
+    <title>Lecteur de notes sombre</title>
     <style>
         body {
             background-color: #1e1e1e;
@@ -34,7 +34,7 @@
             color: #9cdcfe;
             border-bottom: 1px solid #333333;
         }
-        textarea {
+        .notepad-content {
             flex: 1;
             background-color: #1e1e1e;
             color: #9cdcfe;
@@ -42,19 +42,20 @@
             padding: 15px;
             font-size: 16px;
             font-family: 'Courier New', Courier, monospace;
-            resize: none;
-            outline: none;
+            overflow-y: auto;
+            white-space: pre-wrap;
             line-height: 1.5;
+            margin: 0;
         }
     </style>
 </head>
 <body>
 
     <div class="notepad">
-        <div class="notepad-header">Mon Bloc-notes</div>
-        <textarea>Test
+        <div class="notepad-header">Mon Lecteur de notes</div>
+        <div class="notepad-content">Test
 Salut !
-Ça va ?</textarea>
+Ça va ?</div>
     </div>
 
 </body>
