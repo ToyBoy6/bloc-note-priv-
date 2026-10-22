@@ -1,186 +1,176 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bloc-Notes Privé</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 600px;
-      margin: 40px auto;
-      padding: 20px;
-      background-color: #f4f4f9;
-    }
-    .hidden {
-      display: none;
-    }
-    input, textarea, button {
-      width: 100%;
-      padding: 10px;
-      margin: 5px 0 15px 0;
-      font-size: 16px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      box-sizing: border-box;
-    }
-    textarea {
-      height: 120px;
-      resize: vertical;
-    }
-    button {
-      background-color: #007bff;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
-    .danger-btn {
-      background-color: #dc3545;
-    }
-    .danger-btn:hover {
-      background-color: #c82333;
-    }
-    .note-card {
-      background: white;
-      padding: 15px;
-      margin-bottom: 10px;
-      border-radius: 6px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lecteur de notes sombre</title>
+    <style>
+        body {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            flex-direction: column;
+        }
+        .hidden {
+            display: none !important;
+        }
+        #authContainer {
+            background-color: #252526;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #333333;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+        #authContainer input {
+            display: block;
+            width: 250px;
+            padding: 10px;
+            margin: 10px auto;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            border: 1px solid #333333;
+            border-radius: 4px;
+        }
+        #authContainer button {
+            padding: 10px 20px;
+            background-color: #007acc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #authContainer button:hover {
+            background-color: #005999;
+        }
+        .notepad {
+            width: 80%;
+            max-width: 600px;
+            height: 70vh;
+            background-color: #252526;
+            border: 1px solid #333333;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .notepad-header {
+            background-color: #2d2d2d;
+            padding: 10px 15px;
+            font-size: 14px;
+            color: #9cdcfe;
+            border-bottom: 1px solid #333333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .notepad-header button {
+            background: none;
+            border: 1px solid #9cdcfe;
+            color: #9cdcfe;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .notepad-header button:hover {
+            background-color: #9cdcfe;
+            color: #1e1e1e;
+        }
+        .notepad-content {
+            flex: 1;
+            background-color: #1e1e1e;
+            color: #9cdcfe;
+            border: none;
+            padding: 15px;
+            font-size: 16px;
+            font-family: 'Courier New', Courier, monospace;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            line-height: 1.5;
+            margin: 0;
+        }
+    </style>
 </head>
 <body>
 
-  <!-- SECTION CONNEXION -->
-  <div id="authSection">
-    <h2>Connexion requise</h2>
-    <input type="email" id="emailInput" placeholder="Votre e-mail">
-    <input type="password" id="passwordInput" placeholder="Votre mot de passe">
-    <button id="loginBtn">Se connecter</button>
-  </div>
-
-  <!-- SECTION APPLICATION (Visible uniquement une fois connecté) -->
-  <div id="appSection" class="hidden">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-      <h2>Mes Notes Privées</h2>
-      <button id="logoutBtn" class="danger-btn" style="width: auto; padding: 8px 15px;">Se déconnecter</button>
+    <!-- Formulaire de connexion -->
+    <div id="authContainer">
+        <h3>Connexion requise</h3>
+        <input type="email" id="email" placeholder="Adresse e-mail">
+        <input type="password" id="password" placeholder="Mot de passe">
+        <button id="loginBtn">Se connecter</button>
     </div>
 
-    <!-- Formulaire d'ajout -->
-    <textarea id="noteInput" placeholder="Écrivez votre idée ou votre note ici..."></textarea>
-    <button id="saveBtn">Enregistrer dans Firestore</button>
+    <!-- Lecteur de notes (masqué par défaut) -->
+    <div id="notepadContainer" class="notepad hidden">
+        <div class="notepad-header">
+            <span>Mon Lecteur de notes</span>
+            <button id="logoutBtn">Se déconnecter</button>
+        </div>
+        <div class="notepad-content">C'est ici que vous écrivez votre texte dans le code HTML. 
+Il s'affichera à l'écran mais il sera impossible de le modifier directement depuis la page web.</div>
+    </div>
 
-    <hr style="margin: 30px 0;">
+    <!-- Script Firebase Auth -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
 
-    <!-- Liste des notes -->
-    <h3>Notes enregistrées</h3>
-    <div id="notesContainer">Chargement des notes...</div>
-  </div>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDl_lYpPenVuLeK1Gg-W-nf7QUS0_zFnO8",
+            authDomain: "bloc-note-prive.firebaseapp.com",
+            projectId: "bloc-note-prive",
+            storageBucket: "bloc-note-prive.firebasestorage.app",
+            messagingSenderId: "666956249120",
+            appId: "1:666956249120:web:cb1183c8b58a1b1663a445",
+            measurementId: "G-217318KNQT"
+        };
 
-  <!-- Script Firebase -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
-    import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDl_lYpPenVuLeK1Gg-W-nf7QUS0_zFnO8",
-      authDomain: "bloc-note-prive.firebaseapp.com",
-      projectId: "bloc-note-prive",
-      storageBucket: "bloc-note-prive.firebasestorage.app",
-      messagingSenderId: "666956249120",
-      appId: "1:666956249120:web:cb1183c8b58a1b1663a445",
-      measurementId: "G-217318KNQT"
-    };
+        const authContainer = document.getElementById('authContainer');
+        const notepadContainer = document.getElementById('notepadContainer');
+        const loginBtn = document.getElementById('loginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    const authSection = document.getElementById('authSection');
-    const appSection = document.getElementById('appSection');
-    const notesContainer = document.getElementById('notesContainer');
-
-    // Gestion de l'état de connexion
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        authSection.classList.add('hidden');
-        appSection.classList.remove('hidden');
-        chargerNotes();
-      } else {
-        authSection.classList.remove('hidden');
-        appSection.classList.add('hidden');
-      }
-    });
-
-    // Connexion
-    document.getElementById('loginBtn').addEventListener('click', async () => {
-      const email = document.getElementById('emailInput').value;
-      const password = document.getElementById('passwordInput').value;
-      try {
-        await signInWithEmailAndPassword(auth, email, password);
-      } catch (error) {
-        alert("Erreur de connexion : " + error.message);
-      }
-    });
-
-    // Déconnexion
-    document.getElementById('logoutBtn').addEventListener('click', async () => {
-      await signOut(auth);
-    });
-
-    // Enregistrement d'une note
-    document.getElementById('saveBtn').addEventListener('click', async () => {
-      const input = document.getElementById('noteInput');
-      const text = input.value.trim();
-
-      if (!text) {
-        alert("Veuillez écrire un texte avant d'enregistrer !");
-        return;
-      }
-
-      try {
-        await addDoc(collection(db, "idees"), {
-          texte: text,
-          date: new Date().toISOString()
+        // Gestion de l'état de connexion en temps réel
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                authContainer.classList.add('hidden');
+                notepadContainer.classList.remove('hidden');
+            } else {
+                authContainer.classList.remove('hidden');
+                notepadContainer.classList.add('hidden');
+            }
         });
-        input.value = '';
-        alert("Note enregistrée !");
-        chargerNotes(); // Recharge la liste
-      } catch (e) {
-        console.error("Erreur : ", e);
-        alert("Erreur lors de l'enregistrement.");
-      }
-    });
 
-    // Chargement des notes
-    async function chargerNotes() {
-      notesContainer.innerHTML = "Chargement...";
-      try {
-        const querySnapshot = await getDocs(collection(db, "idees"));
-        notesContainer.innerHTML = "";
-        
-        if (querySnapshot.empty) {
-          notesContainer.innerHTML = "<p>Aucune note trouvée.</p>";
-          return;
-        }
-
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          const card = document.createElement('div');
-          card.className = 'note-card';
-          card.innerHTML = `<p style="font-size: 12px; color: #666;">${new Date(data.date).toLocaleString()}</p><p>${data.texte || ''}</p>`;
-          notesContainer.appendChild(card);
+        // Connexion au clic
+        loginBtn.addEventListener('click', async () => {
+            try {
+                await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+            } catch (error) {
+                alert("Erreur de connexion : " + error.message);
+            }
         });
-      } catch (error) {
-        notesContainer.innerHTML = "Erreur lors du chargement des notes.";
-        console.error(error);
-      }
-    }
-  </script>
+
+        // Déconnexion au clic
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+            } catch (error) {
+                console.error("Erreur de déconnexion", error);
+            }
+        });
+    </script>
 
 </body>
 </html>
