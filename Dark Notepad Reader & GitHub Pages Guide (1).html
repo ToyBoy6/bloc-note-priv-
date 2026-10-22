@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lecteur de Notes Sombre - Privé</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        editorBg: '#1e1e1e',
+                        editorSidebar: '#252526',
+                        editorHeader: '#2d2d2d',
+                        editorBorder: '#333333',
+                        editorText: '#9cdcfe',
+                        editorBlue: '#007acc',
+                        editorBlueHover: '#0062a3',
+                        vscodeGreen: '#6a9955',
+                        vscodeOrange: '#ce9178',
+                        vscodeYellow: '#dcdcaa',
+                        vscodePurple: '#c586c0'
+                    },
+                    fontFamily: {
+                        code: ['Consolas', 'Monaco', 'Courier New', 'monospace'],
+                        sans: ['Segoe UI', 'Tahoma', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e1e1e;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3e3e42;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4f4f4f;
+        }
+    </style>
+</head>
+<body class="bg-[#121212] text-[#d4d4d4] font-sans min-h-screen flex flex-col justify-between selection:bg-[#264f78] selection:text-white">
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-editorBlue text-white px-4 py-2.5 rounded shadow-2xl text-xs flex items-center space-x-2 transition-all duration-300 opacity-0 pointer-events-none z-50 border border-blue-400/20">
+        <i id="toastIcon" class="fa-solid fa-check"></i>
+        <span id="toastMsg">Notification</span>
+    </div>
+
+    <!-- Header Navigation -->
+    <header class="bg-editorHeader border-b border-editorBorder h-12 flex items-center justify-between px-4 sticky top-0 z-40">
+        <div class="flex items-center space-x-3">
+            <i class="fa-solid fa-code text-editorBlue text-lg"></i>
+            <span class="font-semibold text-sm tracking-wide text-gray-200">DarkNote <span class="text-[10px] px-2 py-0.5 rounded bg-editorBlue/20 text-editorBlue font-mono border border-editorBlue/30">En ligne</span></span>
+        </div>
+
+        <div id="headerActions" class="flex items-center space-x-2">
+            <!-- Tutorial Modal Trigger Button -->
+            <button id="openTutorialBtn" class="bg-editorSidebar hover:bg-editorBorder text-vscodeYellow border border-vscodeYellow/30 px-3 py-1 rounded text-xs font-medium transition flex items-center space-x-1.5">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <span class="hidden sm:inline">Tutoriel GitHub Pages</span>
+            </button>
+
+            <!-- User Status & Logout -->
+            <div id="userBadge" class="hidden flex items-center space-x-2">
+                <span class="text-xs font-mono text-gray-300 bg-editorSidebar border border-editorBorder px-2.5 py-1 rounded hidden md:inline-block">
+                    <i class="fa-solid fa-user-check text-vscodeGreen mr-1"></i> toyboy6126@gmail.com
+                </span>
+                <button id="logoutBtn" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 px-3 py-1 rounded text-xs font-medium transition flex items-center space-x-1">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Déconnexion</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Section -->
+    <main class="flex-1 flex justify-center items-center p-3 sm:p-6">
+
+        <!-- LOCK SCREEN / LOGIN FORM -->
+        <div id="loginView" class="w-full max-w-md bg-editorSidebar border border-editorBorder rounded-xl shadow-2xl p-6 sm:p-8">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-editorBg border border-editorBorder rounded-full flex items-center justify-center mx-auto mb-3 text-editorBlue text-2xl shadow-inner">
+                    <i class="fa-solid fa-user-lock"></i>
+                </div>
+                <h1 class="text-lg font-bold text-white mb-1">Espace Sécurisé Privé</h1>
+                <p class="text-xs text-gray-400">Veuillez vous identifier pour accéder au lecteur de note.</p>
+            </div>
+
+            <form id="loginForm" class="space-y-4">
+                <div id="loginError" class="hidden p-3 rounded bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <span id="loginErrorText">Identifiants incorrects.</span>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1.5">Adresse Email</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-envelope absolute left-3 top-2.5 text-xs text-gray-500"></i>
+                        <input type="email" id="loginEmail" required value="toyboy6126@gmail.com" placeholder="toyboy6126@gmail.com" class="w-full bg-editorBg border border-editorBorder rounded pl-8 pr-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-editorBlue transition">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-gray-300 mb-1.5">Mot de passe</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-key absolute left-3 top-2.5 text-xs text-gray-500"></i>
+                        <input type="password" id="loginPassword" required value="T.Bermond6" placeholder="••••••••" class="w-full bg-editorBg border border-editorBorder rounded pl-8 pr-8 py-2 text-xs text-gray-200 focus:outline-none focus:border-editorBlue transition">
+                        <button type="button" id="togglePasswordBtn" class="absolute right-3 top-2.5 text-xs text-gray-500 hover:text-gray-300">
+                            <i class="fa-solid fa-eye" id="togglePasswordIcon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between text-xs text-gray-400 pt-1">
+                    <label class="flex items-center space-x-2 cursor-pointer select-none">
+                        <input type="checkbox" id="rememberMe" checked class="rounded bg-editorBg border-editorBorder text-editorBlue focus:ring-0">
+                        <span>Rester connecté</span>
+                    </label>
+                </div>
+
+                <button type="submit" class="w-full bg-editorBlue hover:bg-editorBlueHover text-white py-2.5 rounded text-xs font-semibold transition flex items-center justify-center space-x-2 shadow-lg">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    <span>Se connecter</span>
+                </button>
+            </form>
+
+            <div class="mt-6 pt-4 border-t border-editorBorder/60 text-center">
+                <span class="text-[11px] text-gray-500 font-mono">Accès restreint à toyboy6126@gmail.com</span>
+            </div>
+        </div>
+
+        <!-- READER VIEW (ACTIVE WHEN LOGGED IN) -->
+        <div id="readerView" class="hidden w-full max-w-4xl bg-editorSidebar border border-editorBorder rounded-xl shadow-2xl overflow-hidden flex-col h-[82vh]">
+            
+            <!-- Window Topbar -->
+            <div class="bg-editorHeader border-b border-editorBorder px-4 py-2.5 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <div class="flex space-x-1.5 mr-2">
+                        <span class="w-3 h-3 rounded-full bg-red-500 inline-block opacity-80"></span>
+                        <span class="w-3 h-3 rounded-full bg-yellow-500 inline-block opacity-80"></span>
+                        <span class="w-3 h-3 rounded-full bg-green-500 inline-block opacity-80"></span>
+                    </div>
+                    <i class="fa-regular fa-file-code text-editorText text-sm"></i>
+                    <span class="text-xs sm:text-sm font-mono text-gray-300 font-medium">mon-texte-prive.txt</span>
+                </div>
+
+                <div class="flex items-center space-x-2">
+                    <button id="copyBtn" class="bg-editorBg hover:bg-editorHeader text-gray-300 hover:text-white px-3 py-1 rounded text-xs border border-editorBorder transition flex items-center gap-1.5 font-mono">
+                        <i class="fa-regular fa-copy"></i>
+                        <span>Copier le texte</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab Header -->
+            <div class="bg-[#2d2d2d]/40 border-b border-editorBorder flex items-center px-2 text-xs text-gray-400 font-mono">
+                <div class="bg-editorBg text-editorText px-4 py-1.5 border-t-2 border-editorBlue flex items-center space-x-2 border-r border-editorBorder">
+                    <i class="fa-solid fa-align-left text-xs"></i>
+                    <span>Note Active</span>
+                </div>
+            </div>
+
+            <!-- Content Container -->
+            <div class="flex-1 bg-editorBg flex overflow-hidden relative">
+                <!-- Line Numbers -->
+                <div id="lineNumbers" class="font-mono text-xs py-4 px-3 select-none border-r border-editorBorder/40 bg-editorBg/50 min-w-[3rem] text-right text-gray-600">
+                    1
+                </div>
+
+                <!-- Text Content Display -->
+                <pre id="noteContent" class="flex-1 font-code text-editorText text-sm sm:text-base p-4 overflow-auto whitespace-pre-wrap leading-relaxed select-text outline-none"></pre>
+            </div>
+
+            <!-- Status Bar -->
+            <div class="bg-editorBlue text-white text-[11px] px-3 py-1 flex items-center justify-between font-mono">
+                <div class="flex items-center space-x-3">
+                    <span><i class="fa-solid fa-lock mr-1"></i> Mode Lecture Seule</span>
+                    <span class="hidden sm:inline">|</span>
+                    <span class="hidden sm:inline text-blue-200">Connecté : toyboy6126@gmail.com</span>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <span id="charCounter">0 car.</span>
+                    <span id="lineCounter">1 ligne</span>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- TUTORIAL MODAL (How to host on GitHub Pages and edit directly online) -->
+    <div id="tutorialModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex justify-center items-center p-4 z-50 hidden">
+        <div class="bg-editorSidebar border border-editorBorder rounded-xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            <!-- Modal Header -->
+            <div class="bg-editorHeader border-b border-editorBorder px-5 py-3.5 flex items-center justify-between">
+                <div class="flex items-center space-x-2 text-vscodeYellow">
+                    <i class="fa-brands fa-github text-lg"></i>
+                    <h3 class="font-bold text-sm text-gray-200">Comment publier & modifier votre note en ligne sans réimporter le fichier ?</h3>
+                </div>
+                <button id="closeTutorialBtn" class="text-gray-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="p-6 overflow-y-auto space-y-5 text-xs text-gray-300 leading-relaxed font-sans">
+                <div class="bg-editorBg p-4 rounded-lg border border-editorBorder">
+                    <p class="text-vscodeGreen font-semibold mb-1">💡 Pourquoi utiliser GitHub Pages ?</p>
+                    <p class="text-gray-400">En hébergeant gratuitement cette page sur GitHub, vous pouvez modifier votre texte **directement dans votre navigateur** sur le site de GitHub. Le site se mettra à jour automatiquement en quelques secondes, sans avoir besoin de retélécharger ou réimporter le fichier HTML sur votre ordinateur !</p>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="flex items-start space-x-3">
+                        <span class="bg-editorBlue text-white font-mono w-6 h-6 rounded-full flex items-center justify-center shrink-0 font-bold">1</span>
+                        <div>
+                            <h4 class="font-bold text-gray-200 text-sm">Créer un compte GitHub & un dépôt</h4>
+                            <p class="text-gray-400 mt-0.5">Rendez-vous sur <a href="https://github.com" target="_blank" class="text-editorBlue underline">github.com</a>, créez un compte gratuit, puis cliquez sur le bouton vert **"New"** (ou **"Repository"**).</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start space-x-3">
+                        <span class="bg-editorBlue text-white font-mono w-6 h-6 rounded-full flex items-center justify-center shrink-0 font-bold">2</span>
+                        <div>
+                            <h4 class="font-bold text-gray-200 text-sm">Nommer le dépôt & Ajouter le fichier index.html</h4>
+                            <p class="text-gray-400 mt-0.5">Nommez le dépôt (ex: <code class="bg-editorBg px-1.5 py-0.5 rounded text-vscodeOrange font-mono">mon-bloc-note</code>), cochez **"Public"**, puis créez le dépôt. Cliquez ensuite sur **"Creating a new file"**, nommez le fichier <code class="bg-editorBg px-1.5 py-0.5 rounded text-vscodeYellow font-mono">index.html</code> et collez-y tout ce code HTML.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start space-x-3">
+                        <span class="bg-editorBlue text-white font-mono w-6 h-6 rounded-full flex items-center justify-center shrink-0 font-bold">3</span>
+                        <div>
+                            <h4 class="font-bold text-gray-200 text-sm">Activer GitHub Pages</h4>
+                            <p class="text-gray-400 mt-0.5">Dans votre dépôt, allez dans **Settings** ➔ **Pages**. Sous *Build and deployment*, choisissez la branche **Main** et cliquez sur **Save**. Votre site aura une adresse web unique disponible partout !</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start space-x-3">
+                        <span class="bg-editorBlue text-white font-mono w-6 h-6 rounded-full flex items-center justify-center shrink-0 font-bold">4</span>
+                        <div>
+                            <h4 class="font-bold text-gray-200 text-sm">Comment modifier le texte directement dans le code ?</h4>
+                            <p class="text-gray-400 mt-0.5">Ouvrez le fichier <code class="bg-editorBg px-1 py-0.5 rounded text-vscodeYellow font-mono">index.html</code> sur GitHub, cliquez sur l'icône de crayon ✏️ (Edit), et modifiez la variable <code class="bg-editorBg px-1 py-0.5 rounded text-editorText font-mono">defaultNoteText</code> vers la ligne 210. Cliquez ensuite sur **"Commit changes..."** : votre site est instantanément mis à jour !</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="bg-editorHeader border-t border-editorBorder px-5 py-3 text-right">
+                <button id="closeTutorialBtn2" class="bg-editorBlue hover:bg-editorBlueHover text-white px-4 py-1.5 rounded text-xs font-semibold transition">
+                    J'ai compris
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-editorHeader border-t border-editorBorder py-2 px-4 text-center text-xs text-gray-500 font-mono">
+        Dark Notepad Reader &copy; Accès Sécurisé pour toyboy6126@gmail.com
+    </footer>
+
+    <!-- Logic Script -->
+    <script>
+        // =====================================================================
+        // TEXTE DE LA NOTE CONFIGURÉ DIRECTEMENT DANS LE CODE
+        // Modifiez directement le texte entre les guillemets inversés (`) ci-dessous
+        // =====================================================================
+        const defaultNoteText = `// ===============================================
+// MES NOTES PERSONNELLES ET CONFIDENTIELLES
+// ===============================================
+
+1. Bienvenue T. Bermond.
+2. Ce texte est affiché directement depuis le code HTML.
+3. Seul le compte toyboy6126@gmail.com peut accéder à cette page.
+
+[MÉMOS ET RAPPELS]
+- Projet hébergé en ligne
+- Modification directe sur GitHub possible sans réimporter le fichier HTML
+- Statut de la connexion : Actif et Mémorisé
+
+Dernière mise à jour : Octobre 2026`;
+
+        // Strict Credentials Check
+        const ALLOWED_EMAIL = "toyboy6126@gmail.com";
+        const REQUIRED_PASS = "T.Bermond6";
+
+        // DOM Elements
+        const loginView = document.getElementById('loginView');
+        const readerView = document.getElementById('readerView');
+        const userBadge = document.getElementById('userBadge');
+        
+        const loginForm = document.getElementById('loginForm');
+        const loginEmail = document.getElementById('loginEmail');
+        const loginPassword = document.getElementById('loginPassword');
+        const rememberMe = document.getElementById('rememberMe');
+        const loginError = document.getElementById('loginError');
+        const loginErrorText = document.getElementById('loginErrorText');
+
+        const togglePasswordBtn = document.getElementById('togglePasswordBtn');
+        const togglePasswordIcon = document.getElementById('togglePasswordIcon');
+
+        const noteContent = document.getElementById('noteContent');
+        const lineNumbers = document.getElementById('lineNumbers');
+        const charCounter = document.getElementById('charCounter');
+        const lineCounter = document.getElementById('lineCounter');
+
+        const copyBtn = document.getElementById('copyBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        const tutorialModal = document.getElementById('tutorialModal');
+        const openTutorialBtn = document.getElementById('openTutorialBtn');
+        const closeTutorialBtn = document.getElementById('closeTutorialBtn');
+        const closeTutorialBtn2 = document.getElementById('closeTutorialBtn2');
+
+        // Render Text and Line Numbers
+        function renderNote(text) {
+            noteContent.textContent = text;
+            const lines = text.split('\n');
+            const numLines = lines.length;
+            const numChars = text.length;
+
+            lineCounter.textContent = `${numLines} ligne${numLines > 1 ? 's' : ''}`;
+            charCounter.textContent = `${numChars} car.`;
+
+            let numHTML = '';
+            for (let i = 1; i <= Math.max(numLines, 12); i++) {
+                numHTML += `${i}<br>`;
+            }
+            lineNumbers.innerHTML = numHTML;
+        }
+
+        // Show Toast
+        function showToast(msg, icon = "fa-check") {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.textContent = msg;
+            toastIcon.className = `fa-solid ${icon}`;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 2500);
+        }
+
+        // Check Login Session
+        function checkSession() {
+            const isAuth = localStorage.getItem('isLoggedIn') === 'true' || sessionStorage.getItem('isLoggedIn') === 'true';
+            const userEmail = localStorage.getItem('userEmail') || sessionStorage.getItem('userEmail');
+
+            if (isAuth && userEmail === ALLOWED_EMAIL) {
+                showReader();
+            } else {
+                showLogin();
+            }
+        }
+
+        function showReader() {
+            loginView.classList.add('hidden');
+            readerView.classList.remove('hidden');
+            readerView.classList.add('flex');
+            userBadge.classList.remove('hidden');
+            userBadge.classList.add('flex');
+            renderNote(defaultNoteText);
+        }
+
+        function showLogin() {
+            readerView.classList.add('hidden');
+            readerView.classList.remove('flex');
+            userBadge.classList.add('hidden');
+            loginView.classList.remove('hidden');
+        }
+
+        // Handle Login Submission
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            loginError.classList.add('hidden');
+
+            const emailVal = loginEmail.value.trim();
+            const passVal = loginPassword.value;
+
+            if (emailVal.toLowerCase() === ALLOWED_EMAIL.toLowerCase() && passVal === REQUIRED_PASS) {
+                const storage = rememberMe.checked ? localStorage : sessionStorage;
+                storage.setItem('isLoggedIn', 'true');
+                storage.setItem('userEmail', ALLOWED_EMAIL);
+
+                showReader();
+                showToast("Connexion réussie !", "fa-user-check");
+            } else {
+                loginErrorText.textContent = "Identifiants incorrects ou accès non autorisé.";
+                loginError.classList.remove('hidden');
+            }
+        });
+
+        // Handle Logout
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('userEmail');
+            sessionStorage.removeItem('isLoggedIn');
+            sessionStorage.removeItem('userEmail');
+
+            showLogin();
+            showToast("Déconnecté avec succès", "fa-right-from-bracket");
+        });
+
+        // Toggle Password Visibility
+        togglePasswordBtn.addEventListener('click', () => {
+            if (loginPassword.type === 'password') {
+                loginPassword.type = 'text';
+                togglePasswordIcon.classList.remove('fa-eye');
+                togglePasswordIcon.classList.add('fa-eye-slash');
+            } else {
+                loginPassword.type = 'password';
+                togglePasswordIcon.classList.remove('fa-eye-slash');
+                togglePasswordIcon.classList.add('fa-eye');
+            }
+        });
+
+        // Copy Text Functionality
+        copyBtn.addEventListener('click', () => {
+            const textToCopy = noteContent.textContent;
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = textToCopy;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+
+            showToast("Texte copié dans le presse-papier !", "fa-copy");
+        });
+
+        // Modal Controls
+        openTutorialBtn.addEventListener('click', () => tutorialModal.classList.remove('hidden'));
+        closeTutorialBtn.addEventListener('click', () => tutorialModal.classList.add('hidden'));
+        closeTutorialBtn2.addEventListener('click', () => tutorialModal.classList.add('hidden'));
+
+        // Initialize Application
+        checkSession();
+    </script>
+</body>
+</html>
