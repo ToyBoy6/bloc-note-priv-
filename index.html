@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bloc-Notes Privé - Lecture</title>
+  <title>Bloc-Notes Privé</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -15,16 +15,18 @@
     .hidden {
       display: none;
     }
-    input, button {
+    input, textarea, button {
+      width: 100%;
       padding: 10px;
-      margin: 5px 0;
+      margin: 5px 0 15px 0;
       font-size: 16px;
       border-radius: 6px;
       border: 1px solid #ccc;
       box-sizing: border-box;
     }
-    input {
-      width: 100%;
+    textarea {
+      height: 120px;
+      resize: vertical;
     }
     button {
       background-color: #007bff;
@@ -34,6 +36,12 @@
     }
     button:hover {
       background-color: #0056b3;
+    }
+    .danger-btn {
+      background-color: #dc3545;
+    }
+    .danger-btn:hover {
+      background-color: #c82333;
     }
     .note-card {
       background: white;
@@ -54,10 +62,21 @@
     <button id="loginBtn">Se connecter</button>
   </div>
 
-  <!-- SECTION CONTENU (Lecture seule) -->
-  <div id="contentSection" class="hidden">
-    <h2>Mes Notes (Lecture Seule)</h2>
-    <button id="logoutBtn" style="background-color: #dc3545; margin-bottom: 20px;">Se déconnecter</button>
+  <!-- SECTION APPLICATION (Visible uniquement une fois connecté) -->
+  <div id="appSection" class="hidden">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h2>Mes Notes Privées</h2>
+      <button id="logoutBtn" class="danger-btn" style="width: auto; padding: 8px 15px;">Se déconnecter</button>
+    </div>
+
+    <!-- Formulaire d'ajout -->
+    <textarea id="noteInput" placeholder="Écrivez votre idée ou votre note ici..."></textarea>
+    <button id="saveBtn">Enregistrer dans Firestore</button>
+
+    <hr style="margin: 30px 0;">
+
+    <!-- Liste des notes -->
+    <h3>Notes enregistrées</h3>
     <div id="notesContainer">Chargement des notes...</div>
   </div>
 
@@ -65,7 +84,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
-    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDl_lYpPenVuLeK1Gg-W-nf7QUS0_zFnO8",
@@ -82,28 +101,25 @@
     const db = getFirestore(app);
 
     const authSection = document.getElementById('authSection');
-    const contentSection = document.getElementById('contentSection');
+    const appSection = document.getElementById('appSection');
     const notesContainer = document.getElementById('notesContainer');
 
-    // Vérifier l'état de la connexion en direct
+    // Gestion de l'état de connexion
     onAuthStateChanged(auth, (user) => {
       if (user) {
-        // Utilisateur connecté : on affiche les notes
         authSection.classList.add('hidden');
-        contentSection.classList.remove('hidden');
+        appSection.classList.remove('hidden');
         chargerNotes();
       } else {
-        // Utilisateur déconnecté : on affiche le formulaire
         authSection.classList.remove('hidden');
-        contentSection.classList.add('hidden');
+        appSection.classList.add('hidden');
       }
     });
 
-    // Action de connexion
+    // Connexion
     document.getElementById('loginBtn').addEventListener('click', async () => {
       const email = document.getElementById('emailInput').value;
       const password = document.getElementById('passwordInput').value;
-
       try {
         await signInWithEmailAndPassword(auth, email, password);
       } catch (error) {
@@ -111,12 +127,36 @@
       }
     });
 
-    // Action de déconnexion
+    // Déconnexion
     document.getElementById('logoutBtn').addEventListener('click', async () => {
       await signOut(auth);
     });
 
-    // Fonction pour charger et afficher les notes (Lecture seule)
+    // Enregistrement d'une note
+    document.getElementById('saveBtn').addEventListener('click', async () => {
+      const input = document.getElementById('noteInput');
+      const text = input.value.trim();
+
+      if (!text) {
+        alert("Veuillez écrire un texte avant d'enregistrer !");
+        return;
+      }
+
+      try {
+        await addDoc(collection(db, "idees"), {
+          texte: text,
+          date: new Date().toISOString()
+        });
+        input.value = '';
+        alert("Note enregistrée !");
+        chargerNotes(); // Recharge la liste
+      } catch (e) {
+        console.error("Erreur : ", e);
+        alert("Erreur lors de l'enregistrement.");
+      }
+    });
+
+    // Chargement des notes
     async function chargerNotes() {
       notesContainer.innerHTML = "Chargement...";
       try {
@@ -132,7 +172,7 @@
           const data = doc.data();
           const card = document.createElement('div');
           card.className = 'note-card';
-          card.innerHTML = `<p><strong>${data.date || ''}</strong></p><p>${data.texte || ''}</p>`;
+          card.innerHTML = `<p style="font-size: 12px; color: #666;">${new Date(data.date).toLocaleString()}</p><p>${data.texte || ''}</p>`;
           notesContainer.appendChild(card);
         });
       } catch (error) {
