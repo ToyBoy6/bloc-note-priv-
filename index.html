@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bloc-Notes Privé</title>
+  <title>Bloc-Notes Privé - Lecture</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -12,48 +12,61 @@
       padding: 20px;
       background-color: #f4f4f9;
     }
-    h1 {
-      color: #333;
+    .hidden {
+      display: none;
     }
-    textarea {
-      width: 100%;
-      height: 120px;
+    input, button {
       padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      resize: vertical;
-      box-sizing: border-box;
+      margin: 5px 0;
       font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    input {
+      width: 100%;
     }
     button {
-      margin-top: 10px;
-      padding: 10px 20px;
       background-color: #007bff;
       color: white;
       border: none;
-      border-radius: 6px;
       cursor: pointer;
-      font-size: 16px;
     }
     button:hover {
       background-color: #0056b3;
+    }
+    .note-card {
+      background: white;
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
   </style>
 </head>
 <body>
 
-  <h1>Mes Notes Privées</h1>
-  <textarea id="noteInput" placeholder="Écrivez votre idée ou votre note ici..."></textarea>
-  <br>
-  <button id="saveBtn">Enregistrer dans Firestore</button>
+  <!-- SECTION CONNEXION -->
+  <div id="authSection">
+    <h2>Connexion requise</h2>
+    <input type="email" id="emailInput" placeholder="Votre e-mail">
+    <input type="password" id="passwordInput" placeholder="Votre mot de passe">
+    <button id="loginBtn">Se connecter</button>
+  </div>
+
+  <!-- SECTION CONTENU (Lecture seule) -->
+  <div id="contentSection" class="hidden">
+    <h2>Mes Notes (Lecture Seule)</h2>
+    <button id="logoutBtn" style="background-color: #dc3545; margin-bottom: 20px;">Se déconnecter</button>
+    <div id="notesContainer">Chargement des notes...</div>
+  </div>
 
   <!-- Script Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-analytics.js";
-    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
 
-    // Votre configuration Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDl_lYpPenVuLeK1Gg-W-nf7QUS0_zFnO8",
       authDomain: "bloc-note-prive.firebaseapp.com",
@@ -64,34 +77,69 @@
       measurementId: "G-217318KNQT"
     };
 
-    // Initialisation
     const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
+    const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // Écouteur d'événement sur le bouton d'enregistrement
-    document.getElementById('saveBtn').addEventListener('click', async () => {
-      const input = document.getElementById('noteInput');
-      const text = input.value.trim();
+    const authSection = document.getElementById('authSection');
+    const contentSection = document.getElementById('contentSection');
+    const notesContainer = document.getElementById('notesContainer');
 
-      if (!text) {
-        alert("Veuillez écrire un texte avant d'enregistrer !");
-        return;
-      }
-
-      try {
-        const docRef = await addDoc(collection(db, "idees"), {
-          texte: text,
-          date: new Date().toISOString()
-        });
-
-        alert("Note enregistrée avec succès !");
-        input.value = ''; // Réinitialise le champ texte
-      } catch (e) {
-        console.error("Erreur lors de l'enregistrement : ", e);
-        alert("Une erreur s'est produite lors de l'enregistrement.");
+    // Vérifier l'état de la connexion en direct
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // Utilisateur connecté : on affiche les notes
+        authSection.classList.add('hidden');
+        contentSection.classList.remove('hidden');
+        chargerNotes();
+      } else {
+        // Utilisateur déconnecté : on affiche le formulaire
+        authSection.classList.remove('hidden');
+        contentSection.classList.add('hidden');
       }
     });
+
+    // Action de connexion
+    document.getElementById('loginBtn').addEventListener('click', async () => {
+      const email = document.getElementById('emailInput').value;
+      const password = document.getElementById('passwordInput').value;
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (error) {
+        alert("Erreur de connexion : " + error.message);
+      }
+    });
+
+    // Action de déconnexion
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await signOut(auth);
+    });
+
+    // Fonction pour charger et afficher les notes (Lecture seule)
+    async function chargerNotes() {
+      notesContainer.innerHTML = "Chargement...";
+      try {
+        const querySnapshot = await getDocs(collection(db, "idees"));
+        notesContainer.innerHTML = "";
+        
+        if (querySnapshot.empty) {
+          notesContainer.innerHTML = "<p>Aucune note trouvée.</p>";
+          return;
+        }
+
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          const card = document.createElement('div');
+          card.className = 'note-card';
+          card.innerHTML = `<p><strong>${data.date || ''}</strong></p><p>${data.texte || ''}</p>`;
+          notesContainer.appendChild(card);
+        });
+      } catch (error) {
+        notesContainer.innerHTML = "Erreur lors du chargement des notes.";
+        console.error(error);
+      }
+    }
   </script>
 
 </body>
